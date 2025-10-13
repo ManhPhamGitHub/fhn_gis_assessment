@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "email": "manh@example.com",
+    "suspended": false
+  },
+  {
+    "id": 2,
+    "email": "an@example.com",
+    "suspended": false
+  },
+  {
+    "id": 3,
+    "email": "binh@example.com",
+    "suspended": false
+  }
+]
