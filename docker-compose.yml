@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: fhn_gis_assessment_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-fhn_db}
+      MYSQL_USER: ${MYSQL_USER:-fhn_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-fhn_password}
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - '3306:3306'
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fhn_gis_assessment_app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # DATABASE_URL is composed from the DB service credentials and host 'db'
+      DATABASE_URL: ${DATABASE_URL}
+      PORT: ${PORT:-5000}
+      NODE_ENV: ${NODE_ENV:-production}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '5000:5000'
+    volumes:
+      - ./:/usr/src/app:cached
+    command: ['npm', 'run', 'start:prod']
+
+volumes:
+  db_data:

@@ -4,33 +4,49 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
+import { Response } from 'express';
+export const formatErrorResponse = (code: any, msg: any, data: any = null) => {
+  return {
+    status: 0,
+    error: code,
+    msg: msg,
+    currentTime: new Date().toISOString(),
+    data: data,
+  };
+};
+export const getStatusCode = (exception: unknown): number => {
+  return exception instanceof HttpException
+    ? exception.getStatus()
+    : HttpStatus.INTERNAL_SERVER_ERROR;
+};
+
+export const getErrorMessage = (exception: any): any => {
+  const { response = null } = exception;
+  if (response) {
+    return response.message || String(response);
+  }
+  return String(exception);
+};
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost) {
+  private readonly logger = new Logger();
+
+  catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest();
+    const code = getStatusCode(exception);
+    const message = getErrorMessage(exception);
+    const { originalUrl, method } = request;
+    const { validateCode = null } = exception.response || {};
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Internal server error';
+    this.logger.error(
+      `[Error] Code:${code} Request: ${originalUrl} method: ${method} message: ${message} `,
+    );
 
-    if (exception instanceof HttpException) {
-      status = exception.getStatus();
-      const res = exception.getResponse();
-      if (typeof res === 'string') message = res;
-      else if (typeof res === 'object' && res !== null && 'message' in res)
-        message = (res as any).message;
-    } else if (exception instanceof Error) {
-      message = exception.message;
-    }
-
-    // log server errors
-    if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
-      // eslint-disable-next-line no-console
-      console.error('Unhandled exception', exception);
-    }
-
-    response.status(status).json({ message });
+    response.status(code).json(formatErrorResponse(validateCode, message, {}));
   }
 }

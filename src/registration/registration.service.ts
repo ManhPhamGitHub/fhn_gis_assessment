@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Teacher } from '../db/entities/teacher.entity';
 import { Student } from '../db/entities/student.entity';
+import { MENTION_REGEX } from 'src/common/utils/constant';
 
 @Injectable()
 export class RegistrationService {
@@ -91,8 +92,8 @@ export class RegistrationService {
       }
     }
 
-    // extract mentions
-    const mentionRegex = /@([\w.+-]+@[\w.-]+\.[\w.-]+)/g;
+    // extract mentions (use a fresh RegExp instance to avoid shared state)
+    const mentionRegex = new RegExp(MENTION_REGEX);
     let match;
     while ((match = mentionRegex.exec(notification)) !== null) {
       const email = match[1];

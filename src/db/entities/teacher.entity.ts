@@ -15,7 +15,7 @@ export class Teacher {
   @Column({ unique: true })
   email: string;
 
-  @ManyToMany(() => Student, (student) => student.teachers, { cascade: true })
-  @JoinTable({ name: 'teacher_students' })
+  @ManyToMany(() => Student, (student) => student.teachers)
+  @JoinTable()
   students: Student[];
 }
