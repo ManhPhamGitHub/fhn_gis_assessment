@@ -17,8 +17,7 @@ export class RegistrationController {
 
   @Get('commonstudents')
   async commonstudents(@Query() query: CommonStudentsQueryDto) {
-    console.log('Query:', query);
-    const students = await this.regService.commonStudents(query.teacher);
+    const students = await this.regService.commonStudents(query.teacher || []);
     return { students };
   }
 

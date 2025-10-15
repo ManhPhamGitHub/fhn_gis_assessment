@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Teacher } from '../db/entities/teacher.entity';
 import { Student } from '../db/entities/student.entity';
-import { MENTION_REGEX } from 'src/common/utils/constant';
+import { MENTION_REGEX } from '../common/utils/constant';
 
 @Injectable()
 export class RegistrationService {
@@ -15,7 +15,6 @@ export class RegistrationService {
   ) {}
 
   async register(teacherEmail: string, studentEmails: string[]) {
-    // inputs validated/normalized by ParseEmailsPipe
     if (!studentEmails || studentEmails.length === 0) return;
 
     let teacher = await this.teacherRepo.findOne({
@@ -43,7 +42,6 @@ export class RegistrationService {
   }
 
   async commonStudents(teacherEmails: string[]): Promise<string[]> {
-    // teacherEmails validated by ParseTeacherQueryPipe
     const teachers = await this.teacherRepo.find({
       where: teacherEmails.map((email) => ({ email })),
       relations: ['students'],
@@ -78,7 +76,6 @@ export class RegistrationService {
   }
 
   async retrieveForNotifications(teacherEmail: string, notification: string) {
-    // get students registered to teacher
     const teacher = await this.teacherRepo.findOne({
       where: { email: teacherEmail },
       relations: ['students'],

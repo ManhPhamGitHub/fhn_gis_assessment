@@ -16,8 +16,6 @@ export class ResponseInterceptor implements NestInterceptor {
         const res = ctx.getResponse();
         const status = res?.statusCode;
 
-
-        // If response already has envelope, return as-is
         if (
           data &&
           typeof data === 'object' &&

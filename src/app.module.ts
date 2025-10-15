@@ -14,7 +14,7 @@ import { ConfigModule } from '@nestjs/config';
       password: process.env.MYSQL_PASSWORD || '',
       database: process.env.MYSQL_DATABASE || 'test',
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: process.env.NODE_ENV !== 'production',
       logging: false,
     }),
     RegistrationModule,

@@ -17,7 +17,7 @@ See `src/registration` for controller, service, and DTOs.
 
 Local setup:
 
-1. Provide `DATABASE_URL` env var pointing to a MySQL instance.
+1. Provide env var pointing to a MySQL instance.
 2. Install deps and build:
 
 ```
