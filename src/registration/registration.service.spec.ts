@@ -12,11 +12,13 @@ describe('RegistrationService', () => {
   let service: RegistrationService;
   let teacherRepo: any;
   let studentRepo: any;
+  let notificationRepo: any;
 
   beforeEach(() => {
     teacherRepo = createMockRepo();
     studentRepo = createMockRepo();
-    service = new RegistrationService(teacherRepo, studentRepo);
+    notificationRepo = createMockRepo();
+    service = new RegistrationService(teacherRepo, studentRepo, notificationRepo);
   });
 
   test('register - creates students and saves teacher', async () => {

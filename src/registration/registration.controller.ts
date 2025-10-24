@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
-import { NotificationDto } from './dto/notification.dto';
+import { NotificationDto, NotificationQueryDto } from './dto/notification.dto';
 import { RegisterDto } from './dto/register.dto';
 import { SuspendDto } from './dto/suspend.dto';
 import { RegistrationService } from './registration.service';
@@ -34,5 +34,13 @@ export class RegistrationController {
       body.notification,
     );
     return { recipients };
+  }
+
+  @Get('notifications')
+  async notifications(
+    @Query() query: NotificationQueryDto,
+  ) {
+    const res = await this.regService.listNotifications(query);
+    return res;
   }
 }

@@ -3,9 +3,11 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Student } from './student.entity';
+import { Notification } from './notification.entity';
 
 @Entity({ name: 'teachers' })
 export class Teacher {
@@ -18,4 +20,7 @@ export class Teacher {
   @ManyToMany(() => Student, (student) => student.teachers)
   @JoinTable()
   students: Student[];
+
+  @OneToMany(() => Notification, (notification) => notification.teacher)
+  notifications: Notification[];
 }

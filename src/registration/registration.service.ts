@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Teacher } from '../db/entities/teacher.entity';
 import { Student } from '../db/entities/student.entity';
 import { MENTION_REGEX } from '../common/utils/constant';
+import { Notification } from '../db/entities/notification.entity';
+import { NotificationQueryDto } from './dto/notification.dto';
 
 @Injectable()
 export class RegistrationService {
@@ -12,6 +14,8 @@ export class RegistrationService {
     private readonly teacherRepo: Repository<Teacher>,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Notification)
+    private readonly notificationRepo: Repository<Notification>,
   ) {}
 
   async register(teacherEmail: string, studentEmails: string[]) {
@@ -98,6 +102,43 @@ export class RegistrationService {
       if (student && !student.suspended) recipients.add(email);
     }
 
-    return Array.from(recipients);
+    const finalRecipients = Array.from(recipients);
+
+    const notif = this.notificationRepo.create({
+      teacher: teacher,
+      recipients: finalRecipients,
+      text: notification,
+    });
+    await this.notificationRepo.save(notif);
+
+    return finalRecipients;
+  }
+
+  async listNotifications(notificationQueryDto: NotificationQueryDto) {
+    const { teacher, page = 1, size = 20 } = notificationQueryDto;
+
+    const qb = this.notificationRepo
+      .createQueryBuilder('n')
+      .leftJoinAndSelect('n.teacher', 'teacher')
+      .where('teacher.email = :email', { email: teacher })
+      .orderBy('n.createdAt', 'DESC');
+
+    const total = await qb.getCount();
+    const items = await qb
+      .skip((page - 1) * size)
+      .take(size)
+      .getMany();
+
+    return {
+      items: items.map((i) => ({
+        id: i.id,
+        text: i.text,
+        recipients: i.recipients,
+        createdAt: i.createdAt,
+      })),
+      total,
+      page,
+      size,
+    };
   }
 }
