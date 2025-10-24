@@ -17,8 +17,35 @@ export class RegistrationService {
     private readonly classRepo: Repository<Class>,
   ) {}
 
+  async registerClass(
+    className: string,
+    teacherEmail: string,
+    capacity: number,
+  ) {
+    let teacher = await this.teacherRepo.findOne({
+      where: { email: teacherEmail },
+    });
+    if (!teacher) {
+      throw new NotFoundException('teacher not found');
+    }
+
+    let existingClass = await this.classRepo.findOne({
+      where: { name: className },
+    });
+    if (existingClass) {
+      throw new Error('class already exists');
+    }
+
+    const newClass = this.classRepo.create({
+      name: className,
+      teacher: teacher,
+      capacity: capacity, 
+    });
+    await this.classRepo.save(newClass);
+  }
+
   // register students into an existing class. Class and teacher must already exist.
-  async register(className: string, studentEmails: string[]) {
+  async registerStudent(className: string, studentEmails: string[]) {
     const cls = await this.classRepo.findOne({
       where: { name: className },
       relations: ['students', 'teacher'],
@@ -32,7 +59,8 @@ export class RegistrationService {
     for (const [index, email] of studentEmails.entries()) {
       let student = await this.studentRepo.findOne({ where: { email } });
       if (!student) {
-        throw new NotFoundException(`student ${email} not found`);
+        student = this.studentRepo.create({ email, suspended: false });
+        await this.studentRepo.save(student);
       }
       if (!studentsToAdd.find((s) => s.email === email)) {
         studentsToAdd.push(student);

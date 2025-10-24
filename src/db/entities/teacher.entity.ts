@@ -4,6 +4,7 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Student } from './student.entity';
@@ -17,6 +18,6 @@ export class Teacher {
   @Column({ unique: true })
   email: string;
 
-  @ManyToOne(() => Class, (cls) => cls.teacher, { nullable: true })
+  @OneToMany(() => Class, (cls) => cls.teacher, { nullable: true })
   classes: Class[];
 }

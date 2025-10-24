@@ -3,15 +3,26 @@ import { RegisterDto } from './dto/register.dto';
 import { SuspendDto } from './dto/suspend.dto';
 import { RegistrationService } from './registration.service';
 import { CommonStudentsQueryDto } from './dto/common-students-query.dto';
+import { RegisterClassDto } from './dto/class.dto';
 
 @Controller()
 export class RegistrationController {
   constructor(private readonly regService: RegistrationService) {}
 
-  @Post('register')
+  @Post('register-student')
   @HttpCode(204)
-  async register(@Body() body: RegisterDto) {
-    await this.regService.register(body.class, body.students);
+  async registerStudent(@Body() body: RegisterDto) {
+    await this.regService.registerStudent(body.className, body.students);
+  }
+
+  @Post('class')
+  @HttpCode(204)
+  async registerClass(@Body() body: RegisterClassDto) {
+    await this.regService.registerClass(
+      body.className,
+      body.teacherEmail,
+      body.capacity,
+    );
   }
 
   @Get('commonstudents')

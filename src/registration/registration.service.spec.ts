@@ -36,7 +36,7 @@ describe('RegistrationService', () => {
     }));
     teacherRepo.save.mockResolvedValue({});
 
-    await service.register('t@example.com', [
+    await service.registerStudent('t@example.com', [
       's1@example.com',
       's2@example.com',
     ]);
