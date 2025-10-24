@@ -106,7 +106,7 @@ export class RegistrationService {
 
     const notif = this.notificationRepo.create({
       teacher: teacher,
-      recipients: finalRecipients,
+      recipients: JSON.stringify(finalRecipients),
       text: notification,
     });
     await this.notificationRepo.save(notif);
@@ -133,7 +133,7 @@ export class RegistrationService {
       items: items.map((i) => ({
         id: i.id,
         text: i.text,
-        recipients: i.recipients,
+        recipients: JSON.parse(i.recipients),
         createdAt: i.createdAt,
       })),
       total,

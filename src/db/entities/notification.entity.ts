@@ -15,8 +15,8 @@ export class Notification {
   @ManyToOne(() => Teacher, { nullable: false })
   teacher: Teacher;
 
-  @Column({ type: 'jsonb' })
-  recipients: string[];
+  @Column({ type: 'text' })
+  recipients: string;
 
   @Column({ type: 'text' })
   text: string;
