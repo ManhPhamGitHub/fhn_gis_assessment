@@ -1,5 +1,4 @@
 import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
-import { NotificationDto } from './dto/notification.dto';
 import { RegisterDto } from './dto/register.dto';
 import { SuspendDto } from './dto/suspend.dto';
 import { RegistrationService } from './registration.service';
@@ -12,7 +11,7 @@ export class RegistrationController {
   @Post('register')
   @HttpCode(204)
   async register(@Body() body: RegisterDto) {
-    await this.regService.register(body.teacher, body.students);
+    await this.regService.register(body.class, body.students);
   }
 
   @Get('commonstudents')
@@ -25,14 +24,5 @@ export class RegistrationController {
   @HttpCode(204)
   async suspend(@Body() body: SuspendDto) {
     await this.regService.suspend(body.student);
-  }
-
-  @Post('retrievefornotifications')
-  async retrieve(@Body() body: NotificationDto) {
-    const recipients = await this.regService.retrieveForNotifications(
-      body.teacher,
-      body.notification,
-    );
-    return { recipients };
   }
 }

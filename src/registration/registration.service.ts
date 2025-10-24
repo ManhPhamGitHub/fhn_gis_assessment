@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Teacher } from '../db/entities/teacher.entity';
 import { Student } from '../db/entities/student.entity';
-import { MENTION_REGEX } from '../common/utils/constant';
+import { Class } from '../db/entities/classes.entity';
+import { MENTION_REGEX } from 'src/common/utils/constant';
 
 @Injectable()
 export class RegistrationService {
@@ -12,54 +13,72 @@ export class RegistrationService {
     private readonly teacherRepo: Repository<Teacher>,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Class)
+    private readonly classRepo: Repository<Class>,
   ) {}
 
-  async register(teacherEmail: string, studentEmails: string[]) {
-    if (!studentEmails || studentEmails.length === 0) return;
-
-    let teacher = await this.teacherRepo.findOne({
-      where: { email: teacherEmail },
-      relations: ['students'],
+  // register students into an existing class. Class and teacher must already exist.
+  async register(className: string, studentEmails: string[]) {
+    const cls = await this.classRepo.findOne({
+      where: { name: className },
+      relations: ['students', 'teacher'],
     });
-    if (!teacher) {
-      teacher = this.teacherRepo.create({ email: teacherEmail });
-    }
-
-    const students: Student[] = [];
-    for (const email of studentEmails) {
+    if (!cls) throw new NotFoundException('class not found');
+    if (!cls.teacher)
+      throw new NotFoundException('class has no assigned teacher');
+    const studentsToAdd = [...cls.students];
+    let studentsNotRegistered: string[] = [];
+    let totalStudent = studentsToAdd.length || 0;
+    for (const [index, email] of studentEmails.entries()) {
       let student = await this.studentRepo.findOne({ where: { email } });
       if (!student) {
-        student = this.studentRepo.create({ email });
-        await this.studentRepo.save(student);
+        throw new NotFoundException(`student ${email} not found`);
       }
-      students.push(student);
+      if (!studentsToAdd.find((s) => s.email === email)) {
+        studentsToAdd.push(student);
+        totalStudent++;
+        if (totalStudent >= cls.capacity) {
+          studentsNotRegistered = studentEmails.slice(index);
+          break;
+        }
+      }
     }
 
-    teacher.students = Array.from(
-      new Set([...(teacher.students || []), ...students]),
-    );
-    await this.teacherRepo.save(teacher);
+    cls.students = studentsToAdd;
+    await this.classRepo.save(cls);
+    if (studentsNotRegistered.length > 0) {
+      return {
+        message: `Class ${className} is full. Some students were not registered.`,
+        studentsNotRegistered,
+      };
+    }
+    return { message: 'All students registered successfully' };
   }
 
+  // Return students common to all teachers passed in. Teachers are linked to classes they teach.
   async commonStudents(teacherEmails: string[]): Promise<string[]> {
+    if (!teacherEmails || teacherEmails.length === 0) return [];
+
+    // load classes for eac h teacher including students
     const teachers = await this.teacherRepo.find({
       where: teacherEmails.map((email) => ({ email })),
-      relations: ['students'],
+      relations: ['classes', 'classes.students'],
     });
 
     if (!teachers || teachers.length === 0) return [];
 
-    // Map student email to count
     const counts = new Map<string, number>();
     for (const teacher of teachers) {
-      for (const s of teacher.students || []) {
-        counts.set(s.email, (counts.get(s.email) || 0) + 1);
+      for (const cls of (teacher as any).classes || []) {
+        for (const s of cls.students || []) {
+          counts.set((s as any).email, (counts.get((s as any).email) || 0) + 1);
+        }
       }
     }
 
     const common: string[] = [];
     for (const [email, cnt] of counts.entries()) {
-      if (cnt === teachers.length) common.push(email);
+      if (cnt >= teachers.length) common.push(email);
     }
     return common.sort();
   }
@@ -83,11 +102,11 @@ export class RegistrationService {
 
     const recipients = new Set<string>();
 
-    if (teacher) {
-      for (const s of teacher.students || []) {
-        if (!s.suspended) recipients.add(s.email);
-      }
-    }
+    // if (teacher) {
+    //   for (const s of teacher.students || []) {
+    //     if (!s.suspended) recipients.add(s.email);
+    //   }
+    // }
 
     // extract mentions (use a fresh RegExp instance to avoid shared state)
     const mentionRegex = new RegExp(MENTION_REGEX);
