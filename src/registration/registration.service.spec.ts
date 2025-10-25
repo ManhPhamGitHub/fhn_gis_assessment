@@ -12,11 +12,17 @@ describe('RegistrationService', () => {
   let service: RegistrationService;
   let teacherRepo: any;
   let studentRepo: any;
+  let whitelistService: any;
 
   beforeEach(() => {
     teacherRepo = createMockRepo();
     studentRepo = createMockRepo();
-    service = new RegistrationService(teacherRepo, studentRepo);
+    whitelistService = { isAllowed: jest.fn().mockResolvedValue(true) };
+    service = new RegistrationService(
+      teacherRepo,
+      studentRepo,
+      whitelistService,
+    );
   });
 
   test('register - creates students and saves teacher', async () => {

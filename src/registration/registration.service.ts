@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Teacher } from '../db/entities/teacher.entity';
 import { Student } from '../db/entities/student.entity';
 import { MENTION_REGEX } from '../common/utils/constant';
+import { WhitelistService } from 'src/whitelist/whitelist.service';
 
 @Injectable()
 export class RegistrationService {
@@ -12,6 +17,7 @@ export class RegistrationService {
     private readonly teacherRepo: Repository<Teacher>,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
+    private readonly whitelistService?: WhitelistService,
   ) {}
 
   async register(teacherEmail: string, studentEmails: string[]) {
@@ -27,6 +33,11 @@ export class RegistrationService {
 
     const students: Student[] = [];
     for (const email of studentEmails) {
+      const allowed = await this.whitelistService.isAllowed(email);
+      if (!allowed) {
+        throw new BadRequestException(`email domain not allowed: ${email}`);
+      }
+
       let student = await this.studentRepo.findOne({ where: { email } });
       if (!student) {
         student = this.studentRepo.create({ email });
