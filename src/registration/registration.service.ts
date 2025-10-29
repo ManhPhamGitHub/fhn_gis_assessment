@@ -54,7 +54,7 @@ export class RegistrationService {
     return;
   }
 
-  async registerStudentToClass(studentEmails: string[], className: string) {
+  async registerStudentsToClass(studentEmails: string[], className: string) {
     let cls = await this.classRepo.findOne({
       where: { name: className },
       relations: ['students'],

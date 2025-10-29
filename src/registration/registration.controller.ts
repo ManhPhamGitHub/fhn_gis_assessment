@@ -5,7 +5,7 @@ import { RegistrationService } from './registration.service';
 import { CommonStudentsQueryDto } from './dto/common-students-query.dto';
 import {
   RegisterClassDto,
-  RegisterStudentToClassDto,
+  RegisterStudentsToClassDto,
 } from './dto/register.dto';
 
 @Controller()
@@ -14,8 +14,8 @@ export class RegistrationController {
 
   @Post('register-students')
   @HttpCode(204)
-  async registerStudent(@Body() body: RegisterStudentToClassDto) {
-    await this.regService.registerStudentToClass(body.students, body.className);
+  async registerStudent(@Body() body: RegisterStudentsToClassDto) {
+    await this.regService.registerStudentsToClass(body.students, body.className);
   }
 
   @Post('register-class')
