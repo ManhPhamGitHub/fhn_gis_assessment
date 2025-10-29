@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import { Teacher } from '../db/entities/teacher.entity';
 import { Student } from '../db/entities/student.entity';
 import { MENTION_REGEX } from '../common/utils/constant';
-import { WhitelistService } from 'src/whitelist/whitelist.service';
+import { WhitelistService } from '../whitelist/whitelist.service';
 
 @Injectable()
 export class RegistrationService {
