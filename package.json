@@ -24,6 +24,7 @@
     "migration:run": "npm run typeorm migration:run -- -d src/db/data-source.ts"
   },
   "dependencies": {
+    "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^10.0.0",
