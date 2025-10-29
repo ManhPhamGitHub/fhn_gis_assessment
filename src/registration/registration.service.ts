@@ -85,11 +85,11 @@ export class RegistrationService {
       relations: ['students'],
     });
 
-    const recipients = new Set<string>();
+    const students: Student[] = [];
 
     if (teacher) {
       for (const s of teacher.students || []) {
-        if (!s.suspended) recipients.add(s.email);
+        if (!s.suspended) students.push(s);
       }
     }
 
@@ -99,46 +99,49 @@ export class RegistrationService {
     while ((match = mentionRegex.exec(notification)) !== null) {
       const email = match[1];
       const student = await this.studentRepo.findOne({ where: { email } });
-      if (student && !student.suspended) recipients.add(email);
+      if (
+        students.findIndex((s) => s.email === email) === -1 &&
+        student &&
+        !student.suspended
+      )
+        students.push(student);
     }
-
-    const finalRecipients = Array.from(recipients);
 
     const notif = this.notificationRepo.create({
       teacher: teacher,
-      recipients: JSON.stringify(finalRecipients),
+      students: students,
       text: notification,
     });
     await this.notificationRepo.save(notif);
 
-    return finalRecipients;
+    return students;
   }
 
   async listNotifications(notificationQueryDto: NotificationQueryDto) {
-    const { teacher, page = 1, size = 20 } = notificationQueryDto;
+    const { studentEmail, page, size } = notificationQueryDto;
 
-    const qb = this.notificationRepo
-      .createQueryBuilder('n')
-      .leftJoinAndSelect('n.teacher', 'teacher')
-      .where('teacher.email = :email', { email: teacher })
-      .orderBy('n.createdAt', 'DESC');
-
-    const total = await qb.getCount();
-    const items = await qb
-      .skip((page - 1) * size)
-      .take(size)
-      .getMany();
+    const [notifications, total] = await this.notificationRepo.findAndCount({
+      where: {
+        students: {
+          email: studentEmail,
+        },
+      },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * size,
+      take: size,
+      relations: ['teacher', 'students'],
+    });
 
     return {
-      items: items.map((i) => ({
-        id: i.id,
-        text: i.text,
-        recipients: JSON.parse(i.recipients),
-        createdAt: i.createdAt,
-      })),
       total,
       page,
       size,
+      notifications: notifications.map((notif) => ({
+        id: notif.id,
+        teacher: notif.teacher?.email,
+        text: notif.text,
+        createdAt: notif.createdAt,
+      })),
     };
   }
 }

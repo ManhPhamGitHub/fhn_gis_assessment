@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { DEFAULT_PAGE, DEFAULT_SIZE } from 'src/common/utils/constant';
 
 export class NotificationDto {
   @ApiProperty({ required: true })
@@ -17,13 +18,13 @@ export class NotificationQueryDto {
   @ApiProperty({ required: true })
   @IsNotEmpty()
   @IsEmail()
-  teacher: string;
+  studentEmail: string;
 
   @ApiProperty({ required: false })
   @IsNotEmpty()
-  page?: number;
+  page?: number = DEFAULT_PAGE;
 
   @ApiProperty({ required: false })
   @IsNotEmpty()
-  size?: number;
+  size?: number = DEFAULT_SIZE;
 }

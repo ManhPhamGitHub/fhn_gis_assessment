@@ -2,10 +2,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Teacher } from './teacher.entity';
+import { Student } from './student.entity';
 
 @Entity({ name: 'notifications' })
 export class Notification {
@@ -15,8 +18,9 @@ export class Notification {
   @ManyToOne(() => Teacher, { nullable: false })
   teacher: Teacher;
 
-  @Column({ type: 'text' })
-  recipients: string;
+  @ManyToMany(() => Student, { nullable: false })
+  @JoinTable()
+  students: Student[];
 
   @Column({ type: 'text' })
   text: string;
