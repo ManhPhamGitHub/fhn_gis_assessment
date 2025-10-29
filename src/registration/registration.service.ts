@@ -1,9 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Teacher } from '../db/entities/teacher.entity';
 import { Student } from '../db/entities/student.entity';
-import { Class } from '../db/entities/classes.entity';
+import { Class } from '../db/entities/class.entity';
 import { MENTION_REGEX } from 'src/common/utils/constant';
 
 @Injectable()
@@ -33,19 +37,19 @@ export class RegistrationService {
       where: { name: className },
     });
     if (existingClass) {
-      throw new Error('class already exists');
+      throw new BadRequestException('class already exists');
     }
 
     const newClass = this.classRepo.create({
       name: className,
       teacher: teacher,
-      capacity: capacity, 
+      capacity: capacity,
     });
     await this.classRepo.save(newClass);
   }
 
   // register students into an existing class. Class and teacher must already exist.
-  async registerStudent(className: string, studentEmails: string[]) {
+  async registerStudents(className: string, studentEmails: string[]) {
     const cls = await this.classRepo.findOne({
       where: { name: className },
       relations: ['students', 'teacher'],
@@ -95,18 +99,21 @@ export class RegistrationService {
 
     if (!teachers || teachers.length === 0) return [];
 
-    const counts = new Map<string, number>();
+    const counts = new Map<string, Set<string>>();
     for (const teacher of teachers) {
-      for (const cls of (teacher as any).classes || []) {
+      for (const cls of teacher.classes || []) {
         for (const s of cls.students || []) {
-          counts.set((s as any).email, (counts.get((s as any).email) || 0) + 1);
+          if (!counts.has(s.email)) {
+            counts.set(s.email, new Set());
+          }
+          counts.get(s.email).add(teacher.email);
         }
       }
     }
 
     const common: string[] = [];
-    for (const [email, cnt] of counts.entries()) {
-      if (cnt >= teachers.length) common.push(email);
+    for (const [email, teacherEmails] of counts.entries()) {
+      if (teacherEmails.size >= teachers.length) common.push(email);
     }
     return common.sort();
   }
@@ -129,12 +136,6 @@ export class RegistrationService {
     });
 
     const recipients = new Set<string>();
-
-    // if (teacher) {
-    //   for (const s of teacher.students || []) {
-    //     if (!s.suspended) recipients.add(s.email);
-    //   }
-    // }
 
     // extract mentions (use a fresh RegExp instance to avoid shared state)
     const mentionRegex = new RegExp(MENTION_REGEX);

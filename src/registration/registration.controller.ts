@@ -9,10 +9,10 @@ import { RegisterClassDto } from './dto/class.dto';
 export class RegistrationController {
   constructor(private readonly regService: RegistrationService) {}
 
-  @Post('register-student')
+  @Post('register-students')
   @HttpCode(204)
-  async registerStudent(@Body() body: RegisterDto) {
-    await this.regService.registerStudent(body.className, body.students);
+  async registerStudents(@Body() body: RegisterDto) {
+    await this.regService.registerStudents(body.className, body.students);
   }
 
   @Post('class')
@@ -25,7 +25,7 @@ export class RegistrationController {
     );
   }
 
-  @Get('commonstudents')
+  @Get('common-students')
   async commonstudents(@Query() query: CommonStudentsQueryDto) {
     const students = await this.regService.commonStudents(query.teacher || []);
     return { students };
