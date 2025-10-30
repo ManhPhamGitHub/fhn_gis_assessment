@@ -152,12 +152,3 @@ For all the above API endpoints, error responses should:
 ```
 { "message": "Some meaningful error message" }
 ```
-
-## EXTRA TASK
-Create a Class and Subject entity. Teachers teach subjects and classes. 1 class belongs to 1 subject. 1 subject may contain multiple classes. Do the migration and API amendment for the register API.
-
-Create a Class entity. Each class is taught by 1 teacher. Classes have a maximum of K students. Students can register directly into classes. See if the candidate can handle race condition when multiple students register.
-
-Create an endpoint to grab past notifications of students with scale
-
-Whitelist email domains with scale
