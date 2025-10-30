@@ -12,11 +12,20 @@ describe('RegistrationService', () => {
   let service: RegistrationService;
   let teacherRepo: any;
   let studentRepo: any;
+  let subjectRepo: any;
+  let classRepo: any;
 
   beforeEach(() => {
     teacherRepo = createMockRepo();
     studentRepo = createMockRepo();
-    service = new RegistrationService(teacherRepo, studentRepo);
+    subjectRepo = createMockRepo();
+    classRepo = createMockRepo();
+    service = new RegistrationService(
+      teacherRepo,
+      studentRepo,
+      subjectRepo,
+      classRepo,
+    );
   });
 
   test('register - creates students and saves teacher', async () => {
@@ -34,10 +43,7 @@ describe('RegistrationService', () => {
     }));
     teacherRepo.save.mockResolvedValue({});
 
-    await service.register('t@example.com', [
-      's1@example.com',
-      's2@example.com',
-    ]);
+    await service.registerClass('math', 'math', 't@example.com');
 
     expect(studentRepo.findOne).toHaveBeenCalledTimes(2);
     expect(studentRepo.save).toHaveBeenCalledTimes(2);

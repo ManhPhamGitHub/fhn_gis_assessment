@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Teacher } from '../db/entities/teacher.entity';
 import { Student } from '../db/entities/student.entity';
+import { Subject } from '../db/entities/subject.entity';
+import { Class } from '../db/entities/class.entity';
 import { MENTION_REGEX } from '../common/utils/constant';
 
 @Injectable()
@@ -12,19 +14,55 @@ export class RegistrationService {
     private readonly teacherRepo: Repository<Teacher>,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Subject)
+    private readonly subjectRepo: Repository<Subject>,
+    @InjectRepository(Class)
+    private readonly classRepo: Repository<Class>,
   ) {}
 
-  async register(teacherEmail: string, studentEmails: string[]) {
-    if (!studentEmails || studentEmails.length === 0) return;
+  async registerClass(
+    className: string,
+    subjectName: string,
+    teacherEmail: string,
+  ) {
+    let subject = await this.subjectRepo.findOne({
+      where: { name: subjectName },
+    });
+    if (!subject) {
+      subject = this.subjectRepo.create({ name: subjectName });
+      await this.subjectRepo.save(subject);
+    }
 
     let teacher = await this.teacherRepo.findOne({
       where: { email: teacherEmail },
-      relations: ['students'],
     });
     if (!teacher) {
       teacher = this.teacherRepo.create({ email: teacherEmail });
+      await this.teacherRepo.save(teacher);
     }
 
+    let cls = await this.classRepo.findOne({ where: { name: className } });
+    if (!cls) {
+      cls = this.classRepo.create({ name: className, subject, teacher });
+      await this.classRepo.save(cls);
+    } else {
+      cls.subject = subject;
+      cls.teacher = teacher;
+      await this.classRepo.save(cls);
+    }
+
+    return;
+  }
+
+  async registerStudentsToClass(studentEmails: string[], className: string) {
+    let cls = await this.classRepo.findOne({
+      where: { name: className },
+      relations: ['students'],
+    });
+
+    if (!cls) {
+      throw new NotFoundException('class not found');
+    }
     const students: Student[] = [];
     for (const email of studentEmails) {
       let student = await this.studentRepo.findOne({ where: { email } });
@@ -35,10 +73,12 @@ export class RegistrationService {
       students.push(student);
     }
 
-    teacher.students = Array.from(
-      new Set([...(teacher.students || []), ...students]),
-    );
-    await this.teacherRepo.save(teacher);
+    if (students.length > 0) {
+      cls.students = [...(cls.students || []), ...students];
+      await this.classRepo.save(cls);
+    }
+
+    return;
   }
 
   async commonStudents(teacherEmails: string[]): Promise<string[]> {
@@ -51,11 +91,6 @@ export class RegistrationService {
 
     // Map student email to count
     const counts = new Map<string, number>();
-    for (const teacher of teachers) {
-      for (const s of teacher.students || []) {
-        counts.set(s.email, (counts.get(s.email) || 0) + 1);
-      }
-    }
 
     const common: string[] = [];
     for (const [email, cnt] of counts.entries()) {
@@ -82,12 +117,6 @@ export class RegistrationService {
     });
 
     const recipients = new Set<string>();
-
-    if (teacher) {
-      for (const s of teacher.students || []) {
-        if (!s.suspended) recipients.add(s.email);
-      }
-    }
 
     // extract mentions (use a fresh RegExp instance to avoid shared state)
     const mentionRegex = new RegExp(MENTION_REGEX);

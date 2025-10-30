@@ -152,3 +152,4 @@ For all the above API endpoints, error responses should:
 ```
 { "message": "Some meaningful error message" }
 ```
+
