@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Teacher } from '../db/entities/teacher.entity';
 import { Student } from '../db/entities/student.entity';
 import { MENTION_REGEX } from '../common/utils/constant';
+import { Notification } from '../db/entities/notification.entity';
+import { NotificationQueryDto } from './dto/notification.dto';
 
 @Injectable()
 export class RegistrationService {
@@ -12,6 +14,8 @@ export class RegistrationService {
     private readonly teacherRepo: Repository<Teacher>,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Notification)
+    private readonly notificationRepo: Repository<Notification>,
   ) {}
 
   async register(teacherEmail: string, studentEmails: string[]) {
@@ -81,11 +85,11 @@ export class RegistrationService {
       relations: ['students'],
     });
 
-    const recipients = new Set<string>();
+    const students: Student[] = [];
 
     if (teacher) {
       for (const s of teacher.students || []) {
-        if (!s.suspended) recipients.add(s.email);
+        if (!s.suspended) students.push(s);
       }
     }
 
@@ -95,9 +99,49 @@ export class RegistrationService {
     while ((match = mentionRegex.exec(notification)) !== null) {
       const email = match[1];
       const student = await this.studentRepo.findOne({ where: { email } });
-      if (student && !student.suspended) recipients.add(email);
+      if (
+        students.findIndex((s) => s.email === email) === -1 &&
+        student &&
+        !student.suspended
+      )
+        students.push(student);
     }
 
-    return Array.from(recipients);
+    const notif = this.notificationRepo.create({
+      teacher: teacher,
+      students: students,
+      text: notification,
+    });
+    await this.notificationRepo.save(notif);
+
+    return students;
+  }
+
+  async listNotifications(notificationQueryDto: NotificationQueryDto) {
+    const { studentEmail, page, size } = notificationQueryDto;
+
+    const [notifications, total] = await this.notificationRepo.findAndCount({
+      where: {
+        students: {
+          email: studentEmail,
+        },
+      },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * size,
+      take: size,
+      relations: ['teacher', 'students'],
+    });
+
+    return {
+      total,
+      page,
+      size,
+      notifications: notifications.map((notif) => ({
+        id: notif.id,
+        teacher: notif.teacher?.email,
+        text: notif.text,
+        createdAt: notif.createdAt,
+      })),
+    };
   }
 }

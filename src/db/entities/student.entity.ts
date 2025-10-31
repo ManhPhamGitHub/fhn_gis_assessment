@@ -1,6 +1,6 @@
 import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Teacher } from './teacher.entity';
-
+import { Notification } from './notification.entity';
 @Entity({ name: 'students' })
 export class Student {
   @PrimaryGeneratedColumn()
@@ -14,4 +14,7 @@ export class Student {
 
   @ManyToMany(() => Teacher, (teacher) => teacher.students)
   teachers: Teacher[];
+
+  @ManyToMany(() => Notification, (notification) => notification.students)
+  notifications: Notification[];
 }
